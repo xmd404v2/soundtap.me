@@ -18,7 +18,7 @@ export const useAudioRecorder = () => {
   const mediaRecorder = useRef<MediaRecorder | null>(null)
   const audioChunks = useRef<Blob[]>([])
   const startTime = useRef<number>(0)
-  const durationInterval = useRef<NodeJS.Timeout>()
+  const durationInterval = useRef<NodeJS.Timeout | null>(null)
 
   const startRecording = useCallback(async () => {
     try {
@@ -56,7 +56,9 @@ export const useAudioRecorder = () => {
     if (mediaRecorder.current && state.isRecording) {
       mediaRecorder.current.stop()
       mediaRecorder.current.stream.getTracks().forEach((track) => track.stop())
-      clearInterval(durationInterval.current)
+      if (durationInterval.current) {
+        clearInterval(durationInterval.current)
+      }
       setState((prev) => ({ ...prev, isRecording: false }))
     }
   }, [state.isRecording])
@@ -64,6 +66,9 @@ export const useAudioRecorder = () => {
   const pauseRecording = useCallback(() => {
     if (mediaRecorder.current && state.isRecording && !state.isPaused) {
       mediaRecorder.current.pause()
+      if (durationInterval.current) {
+        clearInterval(durationInterval.current)
+      }
       setState((prev) => ({ ...prev, isPaused: true }))
     }
   }, [state.isRecording, state.isPaused])
@@ -71,13 +76,23 @@ export const useAudioRecorder = () => {
   const resumeRecording = useCallback(() => {
     if (mediaRecorder.current && state.isRecording && state.isPaused) {
       mediaRecorder.current.resume()
+      startTime.current = Date.now() - state.duration
+      durationInterval.current = setInterval(() => {
+        setState((prev) => ({
+          ...prev,
+          duration: Date.now() - startTime.current,
+        }))
+      }, 100)
       setState((prev) => ({ ...prev, isPaused: false }))
     }
-  }, [state.isRecording, state.isPaused])
+  }, [state.isRecording, state.isPaused, state.duration])
 
   const clearRecording = useCallback(() => {
     if (state.audioUrl) {
       URL.revokeObjectURL(state.audioUrl)
+    }
+    if (durationInterval.current) {
+      clearInterval(durationInterval.current)
     }
     setState({
       isRecording: false,

@@ -20,8 +20,8 @@ export function AudioRecorder() {
   } = useAudioRecorder()
 
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const animationFrameId = useRef<number>()
-  const analyserRef = useRef<AnalyserNode>()
+  const animationFrameId = useRef<number | null>(null)
+  const analyserRef = useRef<AnalyserNode | null>(null)
 
   useEffect(() => {
     if (isRecording && !analyserRef.current) {
